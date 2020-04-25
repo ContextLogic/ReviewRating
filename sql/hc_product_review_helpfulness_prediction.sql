@@ -80,4 +80,4 @@ from
     ) h
     on a.product_id = h.product_id
 ) full_table
-where parent_tag_name = 'Fashion' and locale = 'en' and length(comment) > 0
+where parent_tag_name = 'Fashion' and locale = 'en' and length(TRIM(comment)) > 0
