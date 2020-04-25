@@ -9,6 +9,7 @@ import pandas as pd
 from gensim.models import Word2Vec
 import nltk
 from nltk.corpus import stopwords
+
 from utils import loadDataFromCsv
 
 MODEL_FILE = 'models/717283066_model.pkl'
@@ -42,6 +43,7 @@ class TopicAnalyzer:
         output_file = filename + '_topic' + file_extension
         df = loadDataFromCsv(input_file, rows=rows)
         df = df[df['parent_tag_name'] == 'Fashion']
+        df['comment'] = df['comment'].fillna('')
 
         topic_column = df.apply(self.topicAnalysis, axis=1)
         # sentiment_column = df.apply(self.sentimentAnalysis, axis=1)
@@ -83,42 +85,47 @@ class TopicAnalyzer:
         return text.strip()
 
     def topicAnalysis(self, row):
-        scores = {}
-        word_count = 0
-        for sentence in nltk.sent_tokenize(row['comment']):
-            sentence = self.preprocess_text(sentence.lower())
-            words = sentence.split(' ')
-            words = list(filter(lambda w: w not in self.stop_words, words))
-            word_count += len(words)
+        try:
+            scores = {}
+            word_count = 0
+            for sentence in nltk.sent_tokenize(row['comment']):
+                sentence = self.preprocess_text(sentence.lower())
+                words = sentence.split(' ')
+                words = list(filter(lambda w: w not in self.stop_words, words))
+                word_count += len(words)
 
-            topic_score_dict = {}
-            for topic, seeds in self.topic_keys.items():
-                topic_score = 0
-                for word in words:
-                    score = max(
-                        [(self.model_ak.wv.similarity(word, seed) if word in self.model_ak.wv.vocab else 0) for seed in
-                         seeds])
-                    topic_score += (score if score > 0 else 0)
+                topic_score_dict = {}
+                for topic, seeds in self.topic_keys.items():
+                    topic_score = 0
+                    for word in words:
+                        score = max(
+                            [(self.model_ak.wv.similarity(word, seed) if word in self.model_ak.wv.vocab else 0) for seed
+                             in
+                             seeds])
+                        topic_score += (score if score > 0 else 0)
 
-                topic_score_dict[topic] = topic_score
+                    topic_score_dict[topic] = topic_score
 
-            top_topic = sorted(topic_score_dict.items(), key=operator.itemgetter(1), reverse=True)
+                top_topic = sorted(topic_score_dict.items(), key=operator.itemgetter(1), reverse=True)
 
-            for i in [0, 1]:
-                if i == 0 or top_topic[i][1] > 2.0:  # the first topic or if second topic is strong enough
-                    if top_topic[i][0] not in scores.keys():
-                        scores[top_topic[i][0]] = [top_topic[i][1]]
-                    else:
-                        scores[top_topic[i][0]].append(top_topic[i][1])
+                for i in [0, 1]:
+                    if i == 0 or top_topic[i][1] > 2.0:  # the first topic or if second topic is strong enough
+                        if top_topic[i][0] not in scores.keys():
+                            scores[top_topic[i][0]] = [top_topic[i][1]]
+                        else:
+                            scores[top_topic[i][0]].append(top_topic[i][1])
 
-        topic_list = []
-        for topic, val in scores.items():
-            if max(val) > 0.7:
-                topic_list.append(topic)
-            scores[topic] = max(val)
+            topic_list = []
+            for topic, val in scores.items():
+                if max(val) > 0.7:
+                    topic_list.append(topic)
+                scores[topic] = max(val)
 
-        return pd.Series({'word_count': word_count, 'topic_count': len(topic_list), 'topic_list': topic_list,
-                          'topic_score': f"{scores}"})  # word_count, topic_list, f"{scores}"
+            return pd.Series({'word_count': word_count, 'topic_count': len(topic_list), 'topic_list': topic_list,
+                              'topic_score': f"{scores}"})  # word_count, topic_list, f"{scores}"
+        except:
+            print(row['product_id'], row['transaction_id'])
+            print(row['comment'])
 
     def sentimentAnalysis(self, row):
         scores = {}
