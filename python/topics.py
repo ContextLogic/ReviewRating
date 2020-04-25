@@ -9,8 +9,7 @@ import pandas as pd
 from gensim.models import Word2Vec
 import nltk
 from nltk.corpus import stopwords
-
-from python.utils import loadDataFromCsv
+from utils import loadDataFromCsv
 
 MODEL_FILE = 'models/717283066_model.pkl'
 

@@ -1,3 +1,5 @@
+--https://console.treasuredata.com/app/queries/editor?queryId=1763135
+
 select *
 from
 (
@@ -15,7 +17,7 @@ from
     a.comment,
     a.locale,
     a.likely_fake,
-    DATEDIFF(CURRENT_TIMESTAMP() ,a.time) as days
+    DATEDIFF(CURRENT_TIMESTAMP() ,FROM_UNIXTIME(CAST(a.time as INT))) as days
   from
   (
     select product_id, transaction_id, TD_Last(rating, time) as rating, TD_LAST(comment, time) as comment, TD_LAST(user_locale, time) as locale, td_last(likely_fake, time) as likely_fake, cast(td_last(time, time) as TIMESTAMP) as time
@@ -78,4 +80,4 @@ from
     ) h
     on a.product_id = h.product_id
 ) full_table
-where parent_tag_name = 'Fashion' and locale = 'en'
+where parent_tag_name = 'Fashion' and locale = 'en' and length(TRIM(comment)) > 0
