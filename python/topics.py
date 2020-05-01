@@ -36,7 +36,7 @@ class TopicAnalyzer:
         self.topic_keys = self.topic_keys[category]
         filename, file_extension = os.path.splitext(input_file)
 
-        output_file = filename + '_topic' + file_extension
+        output_file = filename + '_' + category.replace(" ", "") + '_topic' + file_extension
         df = loadDataFromCsv(input_file, rows=rows)
 
         df = df[df['parent_tag_name'] == category]
