@@ -93,6 +93,7 @@ basename = os.path.basename(args.input_file)
 basename, _ = os.path.splitext(basename)
 
 df = loadDataFromCsv(args.input_file, rows=args.rows)
+df['comment'] = df['comment'].fillna('')
 
 train_file = 'models/' + basename + '_w2v.txt'
 model_file = 'models/' + basename + '_model.pkl'
