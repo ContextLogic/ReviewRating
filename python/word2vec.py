@@ -15,7 +15,7 @@ import numpy as np
 from sklearn.manifold import TSNE
 from matplotlib import pyplot as plt, cm
 
-from python.utils import loadDataFromCsv
+from utils import loadDataFromCsv
 
 
 def preprocess_text(text):
@@ -74,6 +74,8 @@ parser.add_argument('-f', '--input_file', metavar='INPUT_FILE', type=str,
                     help='input file path')
 parser.add_argument('-n', '--rows', metavar='ROWS', type=int, default=-1,
                     help='rows to process')
+parser.add_argument('-t', '--training', metavar='TRAINING', type=bool, default=False,
+                    help='train new model')
 
 parser.print_help()
 args = parser.parse_args()
@@ -86,7 +88,7 @@ stop_words = set(stopwords.words('english'))
 nlp = spacy.load('en_core_web_sm')
 lemmatizer = nltk.WordNetLemmatizer()
 
-PROCESSING = False
+
 
 basename = os.path.basename(args.input_file)
 basename, _ = os.path.splitext(basename)
@@ -97,7 +99,7 @@ train_file = 'models/' + basename + '_w2v.txt'
 model_file = 'models/' + basename + '_model.pkl'
 fig_file = 'figs/'+ basename+'.png'
 
-if PROCESSING:
+if args.training:
     with open(train_file, 'w') as f:
         for index, row in df.iterrows():
             for sentence in nltk.sent_tokenize(row['comment']):
@@ -105,38 +107,39 @@ if PROCESSING:
 
     model_ak = train_word2vec(train_file)
     pickle.dump(model_ak, open(model_file, 'wb'))
+
 else:
     model_ak = pickle.load(open(model_file, 'rb'))
     #####
 
-    keys = ['early', 'size', 'soft', 'color', 'concert', 'horrible', 'excellent']
+keys = ['early', 'size', 'soft', 'color', 'concert', 'horrible', 'excellent']
 
-    embedding_clusters = []
-    word_clusters = []
-    for word in keys:
-        embeddings = [model_ak.wv[word]]
-        words = [word]
-        for similar_word, _ in model_ak.wv.most_similar(word, topn=30):
-            words.append(similar_word + ": {:.2f}".format(model_ak.wv.similarity(word, similar_word)))
-            embeddings.append(model_ak.wv[similar_word])
-        embedding_clusters.append(embeddings)
-        word_clusters.append(words)
+embedding_clusters = []
+word_clusters = []
+for word in keys:
+    embeddings = [model_ak.wv[word]]
+    words = [word]
+    for similar_word, _ in model_ak.wv.most_similar(word, topn=30):
+        words.append(similar_word + ": {:.2f}".format(model_ak.wv.similarity(word, similar_word)))
+        embeddings.append(model_ak.wv[similar_word])
+    embedding_clusters.append(embeddings)
+    word_clusters.append(words)
 
-    embedding_clusters = np.array(embedding_clusters)
-    n, m, k = embedding_clusters.shape
-    tsne_model_en_2d = TSNE(perplexity=20, n_components=2, init='pca', n_iter=3500, random_state=32)
-    embeddings_en_2d = np.array(tsne_model_en_2d.fit_transform(embedding_clusters.reshape(n * m, k))).reshape(n, m, 2)
-    tsne_plot_similar_words('Similar words from product review', keys, embeddings_en_2d, word_clusters, 0.7,
-                            fig_file)
+embedding_clusters = np.array(embedding_clusters)
+n, m, k = embedding_clusters.shape
+tsne_model_en_2d = TSNE(perplexity=20, n_components=2, init='pca', n_iter=3500, random_state=32)
+embeddings_en_2d = np.array(tsne_model_en_2d.fit_transform(embedding_clusters.reshape(n * m, k))).reshape(n, m, 2)
+tsne_plot_similar_words('Similar words from product review', keys, embeddings_en_2d, word_clusters, 0.7,
+                        fig_file)
 
-    """words_ak = []
-    embeddings_ak = []
-    for word in list(model_ak.wv.vocab):
-        embeddings_ak.append(model_ak.wv[word])
-        words_ak.append(word)
+"""words_ak = []
+embeddings_ak = []
+for word in list(model_ak.wv.vocab):
+    embeddings_ak.append(model_ak.wv[word])
+    words_ak.append(word)
 
-    tsne_ak_2d = TSNE(perplexity=30, n_components=2, init='pca', n_iter=3500, random_state=32)
-    embeddings_ak_2d = tsne_ak_2d.fit_transform(embeddings_ak)
+tsne_ak_2d = TSNE(perplexity=30, n_components=2, init='pca', n_iter=3500, random_state=32)
+embeddings_ak_2d = tsne_ak_2d.fit_transform(embeddings_ak)
 
-    tsne_plot_2d('review', embeddings_ak_2d, words_ak, 0.1)
-    """
+tsne_plot_2d('review', embeddings_ak_2d, words_ak, 0.1)
+"""
