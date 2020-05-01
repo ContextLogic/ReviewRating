@@ -1,5 +1,6 @@
 import argparse
 import csv
+import json
 import operator
 import os
 import pickle
@@ -12,8 +13,7 @@ from nltk.corpus import stopwords
 
 from utils import loadDataFromCsv
 
-MODEL_FILE = 'models/717283066_model.pkl'
-
+MODEL_FILE = 'models/731458419_model.pkl'
 
 class TopicAnalyzer:
 
@@ -24,25 +24,22 @@ class TopicAnalyzer:
         self.stop_words = set(stopwords.words('english'))
         self.model_ak = pickle.load(open(MODEL_FILE, 'rb'))
 
-        self.topic_keys = {'delivery': ['early', 'arrive'],
-                           'size': ['size', 'fit', 'big'],
-                           'fabric': ['thin', 'cotton'],
-                           'style': ['cute', 'sporty'],
-                           'color': ['dark'],
-                           'occasion': ['concert', 'wedding']
-                           }
+        with open('knowledge/topics.json', 'r') as fp:
+            self.topic_keys = json.load(fp)
 
         self.sentiment_keys = {
             'positive_sentiment': ['excellent'],
             'negative_sentiment': ['horrible']}
 
-    def run(self, input_file, rows):
+    def run(self, input_file, rows, category):
 
+        self.topic_keys = self.topic_keys[category]
         filename, file_extension = os.path.splitext(input_file)
 
         output_file = filename + '_topic' + file_extension
         df = loadDataFromCsv(input_file, rows=rows)
-        df = df[df['parent_tag_name'] == 'Fashion']
+
+        df = df[df['parent_tag_name'] == category]
         df['comment'] = df['comment'].fillna('')
 
         topic_column = df.apply(self.topicAnalysis, axis=1)
@@ -167,9 +164,11 @@ if __name__ == "__main__":
                         help='input file path')
     parser.add_argument('-n', '--rows', metavar='ROWS', type=int, default=-1,
                         help='rows to process')
+    parser.add_argument('-c', '--category', metavar='CATEGORY', type=str, default="Home Decor",
+                        help='category to process')
 
     parser.print_help()
     args = parser.parse_args()
 
     ta = TopicAnalyzer()
-    ta.run(args.input_file, args.rows)
+    ta.run(args.input_file, args.rows, args.category)

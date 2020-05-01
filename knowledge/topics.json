@@ -1,0 +1,79 @@
+{
+    "Fashion": {
+        "delivery": [
+            "early",
+            "arrive"
+        ],
+        "size": [
+            "size",
+            "fit",
+            "big"
+        ],
+        "fabric": [
+            "thin",
+            "cotton"
+        ],
+        "style": [
+            "cute",
+            "sporty"
+        ],
+        "color": [
+            "dark"
+        ],
+        "occasion": [
+            "concert",
+            "wedding"
+        ]
+    },
+    "Home Decor": {
+        "delivery": [
+            "early",
+            "arrive"
+        ],
+        "size": [
+            "size",
+            "fit",
+            "big"
+        ],
+        "fabric": [
+            "thin",
+            "cotton"
+        ],
+        "style": [
+            "cute",
+            "sporty"
+        ],
+        "color": [
+            "dark"
+        ],
+        "install": [
+            "install",
+            "assemble"
+        ],
+        "durability": [
+            "durable"
+        ]
+    },
+    "Gadgets": {
+        "delivery": [
+            "early",
+            "arrive"
+        ],
+        "size": [
+            "size",
+            "big"
+        ],
+        "battery": [
+            "battery",
+            "charge"
+        ],
+        "color": [
+            "bright"
+        ],
+        "assemble": [
+            "assemble",
+            "install",
+            "hook"
+        ]
+    }
+}
