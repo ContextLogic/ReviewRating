@@ -1,0 +1,14 @@
+in:
+    type: file
+    path_prefix: ./728145350_topic.csv    # path of *.csv or *.tsv file on your local machine
+out:
+    type: td
+    apikey: 13/de02ac863287aa88a6f5a67b470873c7b805210f
+    endpoint: api.treasuredata.com
+    database: sweeper_dev
+    table: product_review_topics
+    #time_column: time
+    mode: replace
+    #by default mode: append is used, if not defined. Imported records are appended to the target table with this mode.
+    #mode: replace, replaces existing target table
+    default_timestamp_format: '%Y-%m-%d %H:%M:%S'
