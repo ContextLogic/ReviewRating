@@ -32,7 +32,6 @@
         ],
         "size": [
             "size",
-            "fit",
             "big"
         ],
         "fabric": [
@@ -48,9 +47,11 @@
         ],
         "install": [
             "install",
-            "assemble"
+            "assemble",
+            "hang",
+            "direction"
         ],
-        "durability": [
+        "quality": [
             "durable"
         ]
     },

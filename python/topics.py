@@ -46,7 +46,7 @@ class TopicAnalyzer:
         # sentiment_column = df.apply(self.sentimentAnalysis, axis=1)
 
         df = pd.concat(
-            [df[['product_id', 'transaction_id', 'rating_id', 'rating', 'comment', 'image_count']], topic_column],
+            [df[['product_id', 'transaction_id', 'rating_id', 'rating', 'comment', 'image_count', 'true_tag_name', 'sub_tag_name']], topic_column],
             axis=1)  # , sentiment_column
 
         features = ['word_count', 'topic_count']
