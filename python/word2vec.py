@@ -33,7 +33,7 @@ def prepare_for_w2v(filename_from, filename_to, lang):
 
 def train_word2vec(filename):
     data = gensim.models.word2vec.LineSentence(filename)
-    return Word2Vec(data, size=200, window=5, min_count=3, workers=multiprocessing.cpu_count())
+    return Word2Vec(data, size=50, window=5, min_count=3, workers=multiprocessing.cpu_count())
 
 
 def tsne_plot_2d(label, embeddings, words=[], a=1):
