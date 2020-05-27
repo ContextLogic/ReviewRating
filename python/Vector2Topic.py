@@ -13,7 +13,7 @@ import pandas as pd
 from gensim.models import Word2Vec
 import torch
 
-MODEL_FILE = 'models/731458419_model.pkl'
+
 
 
 def nonemptyTopic(row, topic_cols):
@@ -50,8 +50,17 @@ def printCentralWords(model, model_ak: Word2Vec, n):
     for i in range(weight.size()[0]):
         print(f"{i}:")
 
-        for t in model_ak.wv.similar_by_vector(weight[i].numpy(), topn=n):
+        for t in model_ak.wv.similar_by_vector(weight[i].numpy(), topn=n, restrict_vocab=2000):
             print(t[0], t[1])
+
+    highest_corr = torch.tensor(-1.0)
+    for i in range(weight.size()[0] - 1):
+        for j in range(i + 1, weight.size()[0]):
+            corr = weight[i].dot(weight[j])
+            highest_corr = torch.abs(torch.max(corr, highest_corr))
+
+    print(f"highest correlation: {highest_corr.item()}")
+
 
 def printCentralWords2(model, model_ak: Word2Vec, n):
     print("central words:")
@@ -61,8 +70,9 @@ def printCentralWords2(model, model_ak: Word2Vec, n):
 
     center_vector = weights.mm(vectors)
 
-    for t in model_ak.wv.similar_by_vector(center_vector.reshape(-1).numpy(), topn=n):
+    for t in model_ak.wv.similar_by_vector(center_vector.reshape(-1).numpy(), topn=n, restrict_vocab=2000):
         print(t[0], t[1])
+
 
 def trainMapper(features, label):
     D_in = 200
@@ -72,8 +82,9 @@ def trainMapper(features, label):
     alpha = 10
     beta = 50
 
-    model = TopicNet(D_in, H, D_out)
-    # model = TopicNet2(D_in, D_out)
+    #model = TopicNet(D_in, H, D_out)
+    #model = TopicNet2(D_in, D_out)
+    model = TopicNet3(D_in, H, D_out)
 
     label = torch.tensor(label.values)
 
@@ -87,7 +98,7 @@ def trainMapper(features, label):
     for epoch in range(300):
         # Forward pass: Compute predicted y by passing x to the model
         trainLoss = np.double(0)
-        y_pred = torch.empty(0)
+        y_pred = None
         for words in features:
             score = 0
             for word in words:
@@ -95,7 +106,10 @@ def trainMapper(features, label):
                     vector = model_ak.wv[word]
                     score += model.forward(torch.Tensor(vector))
 
-            y_pred = torch.cat((y_pred, score), 0)
+            if y_pred is None:
+                y_pred = score
+            else:
+                y_pred = torch.cat((y_pred, score), 0)
 
         # Compute and print loss
         weight = model.input_linear.weight
@@ -105,15 +119,16 @@ def trainMapper(features, label):
                 corr = weight[i].dot(weight[j])
                 highest_corr = torch.abs(torch.max(corr, highest_corr))
 
-        weight_loss = torch.min(model.output_linear.weight).item()
-        weight_loss = math.exp(-weight_loss) - 1 if weight_loss < 0 else 0
+        """weight_loss = torch.min(model.output_linear.weight).item()
+        weight_loss = math.exp(-weight_loss) - 1 if weight_loss < 0 else 0"""
 
         hinge_loss = criterion(y_pred.reshape(-1), label)
-        loss = hinge_loss # + alpha * highest_corr + beta * weight_loss
+        loss = hinge_loss  # + alpha * highest_corr + beta * weight_loss
         trainLoss += loss.item()
 
+        #print(f"epoch: {epoch}, train loss: {trainLoss}, hinge loss: {hinge_loss.item()}")
         print(
-            f"epoch: {epoch}, train loss: {trainLoss}, hinge loss: {hinge_loss.item()}, corr loss: {highest_corr.item()}, weight loss: {weight_loss}")
+            f"epoch: {epoch}, train loss: {trainLoss}, hinge loss: {hinge_loss.item()}, corr loss: {highest_corr.item()}")#, weight loss: {weight_loss}")
 
         if es.step(loss):
             break  # early stop criterion is met, we can stop now
@@ -142,8 +157,24 @@ class TopicNet(torch.nn.Module):
     def forward(self, x):
         h_relu = self.input_linear(x)
         y_pred = self.output_linear(h_relu).clamp(min=0)
+        #y_pred = torch.sum(h_relu, dim=0, keepdim=True).clamp(min=0)
         return y_pred
 
+class TopicNet3(torch.nn.Module):
+    def __init__(self, D_in, H, D_out):
+        """
+        In the constructor we construct three nn.Linear instances that we will use
+        in the forward pass.
+        """
+        super(TopicNet3, self).__init__()
+        self.input_linear = torch.nn.Linear(D_in, H, bias=False)
+        self.output_linear = torch.nn.Linear(H, D_out)
+
+    def forward(self, x):
+        h_relu = self.input_linear(x)
+        y_pred = h_relu.max(dim = 0, keepdim= True)[0].clamp(min=0)
+        #y_pred = torch.sum(h_relu, dim=0, keepdim=True).clamp(min=0)
+        return y_pred
 
 class TopicNet2(torch.nn.Module):
     def __init__(self, D_in, D_out):
@@ -159,6 +190,7 @@ class TopicNet2(torch.nn.Module):
         return y_pred
 
 
+MODEL_FILE = 'models/731458419_model.pkl'
 training = False
 
 model_ak: Word2Vec = pickle.load(open(MODEL_FILE, 'rb'))
@@ -182,13 +214,13 @@ if training:
         if col == 'topic: other (pls. specify)':
             continue
 
-        if col != "topic: delivery/shipping":
+        if col != "topic: install/instructions clear?":
             continue
 
         print(col)
 
         label = df.apply(lambda row: -1 if isinstance(row[col], str) and len(row[col]) > 0 else 1, axis=1)
-        print(f"positive: {label[label== -1].count()} ; negative: {label[label== 1].count()}")
+        print(f"positive: {label[label == -1].count()} ; negative: {label[label == 1].count()}")
 
         features = feature_generation(df)
 
@@ -197,13 +229,12 @@ if training:
         torch.save(model.state_dict(),
                    'models/vector2topic.pkl' + datetime.datetime.now().strftime(".%m-%d-%Y-%H-%M-%S"))
 
-        # printCentralWords(model.state_dict(), model_ak, 10)
-        printCentralWords2(model.state_dict(), model_ak, 10)
+        printCentralWords(model.state_dict(), model_ak, 10)
+        # printCentralWords2(model.state_dict(), model_ak, 10)
 
         break
 
-
-    """    col = 'topic: other (pls. specify)'
+    """col = 'topic: other (pls. specify)'
         other_topics = {}
         for t in df[col]:
             if not isinstance(t, str):
@@ -235,9 +266,7 @@ if training:
 
 else:
 
-    model = torch.load('models/vector2topic.pkl.05-17-2020-09-41-31')
+    model = torch.load('models/vector2topic.pkl.05-20-2020-12-10-19') #'models/vector2topic.pkl.05-17-2020-09-41-31'
     print()
-    #printCentralWords(model, model_ak, 10)
+    printCentralWords(model, model_ak, 10)
     printCentralWords2(model, model_ak, 10)
-
-

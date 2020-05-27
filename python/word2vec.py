@@ -83,23 +83,22 @@ args = parser.parse_args()
 nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('wordnet')
-nltk.download('punkt')
 stop_words = set(stopwords.words('english'))
 lemmatizer = nltk.WordNetLemmatizer()
 
 
-
 basename = os.path.basename(args.input_file)
 basename, _ = os.path.splitext(basename)
-
-df = loadDataFromCsv(args.input_file, rows=args.rows)
-df['comment'] = df['comment'].fillna('')
 
 train_file = 'models/' + basename + '_w2v.txt'
 model_file = 'models/' + basename + '_model.pkl'
 fig_file = 'figs/'+ basename+'.png'
 
 if args.training:
+
+    df = loadDataFromCsv(args.input_file, rows=args.rows)
+    df['comment'] = df['comment'].fillna('')
+
     with open(train_file, 'w') as f:
         for index, row in df.iterrows():
             for sentence in nltk.sent_tokenize(row['comment']):
@@ -112,7 +111,7 @@ else:
     model_ak = pickle.load(open(model_file, 'rb'))
     #####
 
-keys = ['early', 'size', 'soft', 'color', 'concert', 'horrible', 'excellent']
+keys = ['early', 'size', 'description', 'instruction', 'chinese']
 
 embedding_clusters = []
 word_clusters = []
