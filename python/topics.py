@@ -24,7 +24,7 @@ class TopicAnalyzer:
         self.stop_words = set(stopwords.words('english'))
         self.model_ak = pickle.load(open(MODEL_FILE, 'rb'))
 
-        with open('knowledge/topics.json', 'r') as fp:
+        with open('knowledge/topics2.json', 'r') as fp:
             self.topic_keys = json.load(fp)
 
         self.sentiment_keys = {

@@ -3,7 +3,6 @@ import pickle
 from gensim.models import Word2Vec
 from nltk.cluster import KMeansClusterer
 import nltk
-from utils import loadDataFromCsv
 
 MODEL_FILE = 'models/731458419_model.pkl'#'models/737684276_Gadgets_topic_model.pkl'#
 model_ak: Word2Vec = pickle.load(open(MODEL_FILE, 'rb'))
